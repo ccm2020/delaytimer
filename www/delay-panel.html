@@ -1,0 +1,247 @@
+<dom-module id="delay-panel">
+<template>
+<style>
+.title_panel {
+    height: 40px;
+    line-height: 40px;
+    font-size: 18px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.timer_panel {
+    display: flex;
+    justify-content: space-between;
+}
+.btn_panel {
+    display: flex;
+    justify-content: space-around;
+}
+.timer_slider_panel {
+    width: 220px;
+    padding-left: 20px;
+}
+.timer_slider {
+    width: 220px;
+}
+.timer_number_panel {
+    width: 130px;
+    align-items: center;
+}
+.timer_displayer {
+    width: 130px;
+    height: 50px;
+    font-size: 20px;
+    text-align: center;
+    line-height: 40px;
+}
+.entity_panel {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+.entity_row {
+    display: flex;
+    justify-content: space-between;
+    padding-left: 10px;
+    padding-right: 10px;
+    height: 30px;
+    line-height: 30px;
+}
+.item {
+    margin: 5px;
+    height: 50px;
+}
+.switch_btn {
+    position: relative;
+}
+.btn_timer {
+    border-radius: 15px;
+    cursor: pointer;
+    width: 100px;
+    height: 30px;
+    background-color: var(--material-primary-color);
+    color: white;
+    text-align: center;
+    line-height: 30px;
+    margin: 2px;
+}
+.btn_timer:hover {
+    background-color: #FDD835;
+}
+.entity_selector {
+    width: 260px;
+    height: 30px;
+    border: 2px solid var(--material-primary-color);
+    margin-left: 10px;
+    border-radius: 15px;
+    text-align: center;
+    text-align-last: center;
+    padding: 0 5%;
+    background-color: white;
+}
+select option{
+    text-align: center;
+}
+.select_btn {
+    color:var(--material-primary-color);
+    width:30px;
+    height:30px;
+}
+.select_btn:hover {
+    color: #FDD835;
+}
+.en_remove_btn {
+    color:var(--material-primary-color);
+}
+.en_remove_btn:hover {
+    color: #FDD835;
+}
+</style>
+<ha-card>
+<div class="title_panel">
+    <ha-icon icon="mdi:timer" class="en_remove_btn"></ha-icon><span style="padding-left:5px">延时控制器</span>
+</div>
+<div class="timer_panel">
+    <div class="timer_slider_panel">
+        <ha-slider pin="" ignore-bar-touch="" class="timer_slider" role="slider" tabindex="0" value="{{time_h}}" min="0" max="23"></ha-slider>
+        <ha-slider pin="" ignore-bar-touch="" class="timer_slider" role="slider" tabindex="0" value="{{time_m}}" min="0" max="59" ></ha-slider>
+        <ha-slider pin="" ignore-bar-touch="" class="timer_slider" role="slider" tabindex="0" value="{{time_s}}" min="0" max="59" ></ha-slider>
+    </div>
+    <div class="timer_number_panel">
+        <div class="timer_displayer">[[time_h]]:[[time_format(time_m)]]:[[time_format(time_s)]]</div>
+        <div class="timer_displayer">[[get_timer_remaining(hass,'delaytimer.timer1')]]</div>
+    </div>
+    
+</div>
+<div class="btn_panel">
+    <div on-tap="call_cancel" class="btn_timer">取消</div><div on-tap="call_pause" class="btn_timer">暂停</div><div on-tap="call_start" class="btn_timer">开始</div>
+</div>
+<br/>
+<div class="btn_panel">
+    <select id="entity_selector" class="entity_selector">
+    <template is="dom-repeat" items="[[config.entities]]" as="entity">
+        <option value="[[entity]]">[[entity_fname(hass,entity)]]</option>
+    </template>
+    </select>
+    <ha-icon on-tap="append_entity" icon="mdi:plus-circle" class="select_btn"></ha-icon>
+</div>
+<div id="entity_panel" class="entity_panel"></div>
+</ha-card>
+</template>
+<script>
+    class delaypanel extends Polymer.Element {
+        constructor() {
+            super();
+        }
+        static get is() {
+            return "delay-panel";
+        }
+        static get observers() {
+            return ['state_changed(hass)'];
+        }
+        call_cancel(e) {
+            let equery_json = {
+                'entity_id': 'delaytimer.timer1',
+                'equery': {}
+            }
+            let timer_json = {
+                entity_id: "delaytimer.timer1",
+            }
+            this.hass.callService("delaytimer","set_equery",equery_json);
+            this.hass.callService("delaytimer","cancel",timer_json);
+        }
+        call_pause(e) {
+            let timer_json = {
+                entity_id: "delaytimer.timer1",
+            }
+            this.hass.callService("delaytimer","pause",timer_json);
+        }
+        call_start(e) {
+            let switches = this.shadowRoot.querySelectorAll(".switch_btn");
+            if(switches.length == 0)
+                return;
+            let att_str = '{';
+            for(let i=0;i<switches.length;i++) {
+                let e = switches[i].entity;
+                let c = (switches[i].checked)?"turn_on":"turn_off";
+                att_str += '"'+e+'"'+':'+'"'+c+'"';
+                att_str += (i+1==switches.length)?'':',';
+            }
+            att_str += '}';
+
+            let equery_json = {
+                'entity_id': 'delaytimer.timer1',
+                'equery': JSON.parse(att_str)
+            }
+            let timer_json = {
+                entity_id: "delaytimer.timer1",
+                duration: this.time_h+':'+this.time_m+':'+this.time_s
+            }
+            this.hass.callService("delaytimer","set_equery",equery_json);
+            this.hass.callService("delaytimer","start",timer_json);
+        }
+        stateObj(h,e) {
+            return h.states[e];
+        }
+        get_timer_remaining(hass,entity) {
+            this.update_time_remaining();
+            let rtime = hass.states[entity].attributes.remaining;
+            return rtime;
+        }
+        time_format(e) {
+            return e>9?e:'0'+e
+        }
+        entity_fname(h,e) {
+            return h.states[e].attributes.friendly_name;
+        }
+        entity_remove(e) {
+            console.log(e);
+            console.log(this);
+            e.remove(0);
+            return;
+            e.target.remove(0);
+        }
+        state_changed(e) {
+            this.delaytimer_state = this.hass.states['delaytimer.timer1'].state;
+        }
+        append_entity(e) {
+            let sel_index = this.$.entity_selector.selectedIndex;
+            let sel_entity = this.$.entity_selector.value;
+            let sel_fname = this.$.entity_selector.options[sel_index].text;
+
+            let en_row = document.createElement("div");
+                en_row.className = 'entity_row';
+                en_row.entity = sel_entity;
+            let en_rebtn = document.createElement("ha-icon");
+                en_rebtn.icon = "mdi:minus-circle";
+                en_rebtn.className = "en_remove_btn";
+                en_rebtn.addEventListener('click',()=> this.entity_remove(en_row));
+            let en_fname = document.createElement("span");
+                en_fname.innerText = sel_fname;
+            let en_switch = document.createElement("ha-switch");
+                en_switch.entity = sel_entity;
+                en_switch.className = "switch_btn";
+            en_row.appendChild(en_rebtn);
+            en_row.appendChild(en_fname);
+            en_row.appendChild(en_switch);
+            this.$.entity_panel.appendChild(en_row);            
+        }
+        ready() {       
+            super.ready();
+            this.update_time_remaining();
+        }
+        update_time_remaining() {
+            if(this.delaytimer_state == 'active') {
+                this.hass.callService("delaytimer","remain",{"entity_id":"delaytimer.timer1"});
+            }
+            setTimeout(()=>this.update_time_remaining(),1000);
+        }
+        connectedCallback() {
+            super.connectedCallback();           
+        }
+        setConfig(value) {
+            this.config = value;
+        }
+    }
+    customElements.define(delaypanel.is, delaypanel);
+</script>
+</dom-module>
