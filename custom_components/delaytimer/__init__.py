@@ -222,8 +222,18 @@ class Timer(RestoreEntity):
 
         self._listener()
         self._listener = None
+
         tmp = self._end - dt_util.utcnow()
-        self._remaining = timedelta(seconds=getattr(tmp,'seconds'))
+        remain_mic = getattr(tmp,'microseconds')
+        remain_sec = getattr(tmp,'seconds')
+        remain_day = getattr(tmp,'days')
+        if remain_day == 0:
+            if remain_mic > 0:
+                remain_sec += 1
+        else:
+            remain_sec = 0
+        self._remaining = timedelta(seconds=remain_sec)
+
         self._state = STATUS_PAUSED
         self._end = None
         self._hass.bus.async_fire(EVENT_TIMER_PAUSED, {"entity_id": self.entity_id})
@@ -257,7 +267,15 @@ class Timer(RestoreEntity):
             return
 
         tmp = self._end - dt_util.utcnow()
-        self._remaining = timedelta(seconds=getattr(tmp,'seconds'))
+        remain_mic = getattr(tmp,'microseconds')
+        remain_sec = getattr(tmp,'seconds')
+        remain_day = getattr(tmp,'days')
+        if remain_day == 0:
+            if remain_mic > 0:
+                remain_sec += 1
+        else:
+            remain_sec = 0
+        self._remaining = timedelta(seconds=remain_sec)
         await self.async_update_ha_state()
 
     async def async_finished(self, time):

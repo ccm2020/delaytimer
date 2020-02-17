@@ -27,6 +27,14 @@ cancel:
       description: Entity id of the timer to cancel. [optional]
       example: 'timer.timer0'
 
+remain:
+  description: update remaining attributes.
+
+  fields:
+    entity_id:
+      description: Entity id of the timer to cancel. [optional]
+      example: 'timer.timer0'
+
 finish:
   description: Finish a timer.
 
@@ -34,3 +42,15 @@ finish:
     entity_id:
       description: Entity id of the timer to finish. [optional]
       example: 'timer.timer0'
+    
+equery:
+  description: append json attributes to commpnents
+
+  fields:
+    entity_id:
+      description: Entity id of the timer to start. [optional]
+      example: 'delaytimer.timer0'
+    equery:
+      description: json. [optional]
+      example: {'switch.sw1':'turn_off','script.s1':'turn_on'}
+    

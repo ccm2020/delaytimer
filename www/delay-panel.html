@@ -4,7 +4,6 @@
 .title_panel {
     height: 40px;
     line-height: 40px;
-    font-size: 18px;
     padding-left: 10px;
     padding-right: 10px;
 }
@@ -17,22 +16,24 @@
     justify-content: space-around;
 }
 .timer_slider_panel {
-    width: 220px;
-    padding-left: 20px;
+    padding: 0px 20px 0px 20px;
+    flex-grow: 1;
 }
 .timer_slider {
-    width: 220px;
+    width: 100%;
 }
 .timer_number_panel {
     width: 130px;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 .timer_displayer {
     width: 130px;
-    height: 50px;
+    height: 30px;
     font-size: 20px;
     text-align: center;
-    line-height: 40px;
+    line-height: 30px;
 }
 .entity_panel {
     padding-top: 10px;
@@ -71,12 +72,13 @@
     width: 260px;
     height: 30px;
     border: 2px solid var(--material-primary-color);
-    margin-left: 10px;
+    margin: 0px 10px 0px 10px;
     border-radius: 15px;
     text-align: center;
     text-align-last: center;
     padding: 0 5%;
     background-color: white;
+    flex-grow: 1;
 }
 select option{
     text-align: center;
@@ -85,6 +87,7 @@ select option{
     color:var(--material-primary-color);
     width:30px;
     height:30px;
+    margin: 0px 10px 0px 10px;
 }
 .select_btn:hover {
     color: #FDD835;
@@ -194,11 +197,7 @@ select option{
             return h.states[e].attributes.friendly_name;
         }
         entity_remove(e) {
-            console.log(e);
-            console.log(this);
             e.remove(0);
-            return;
-            e.target.remove(0);
         }
         state_changed(e) {
             this.delaytimer_state = this.hass.states['delaytimer.timer1'].state;
@@ -228,6 +227,7 @@ select option{
         ready() {       
             super.ready();
             this.update_time_remaining();
+            this.time_m = 30;
         }
         update_time_remaining() {
             if(this.delaytimer_state == 'active') {
